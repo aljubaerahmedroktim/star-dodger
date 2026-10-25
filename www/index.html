@@ -1,0 +1,40 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Star Dodger</title>
+<style>html,body{margin:0;height:100%;background:#0b1020;overflow:hidden;touch-action:none}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');let W,H;
+function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener('resize',rs);
+let st='menu',px=0,items=[],score=0,lives=3,t=0,spd=3,best=0,stars=[];
+try{best=+(localStorage.getItem('best')||0)}catch(e){}
+for(let i=0;i<60;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()*2+.5});
+function start(){px=W/2;items=[];score=0;lives=3;t=0;spd=3;st='play'}
+function mv(e){if(st!=='play')return;const p=e.touches?e.touches[0]:e;px=Math.max(24,Math.min(W-24,p.clientX))}
+addEventListener('touchmove',mv,{passive:true});
+addEventListener('mousemove',e=>{if(e.buttons)mv(e)});
+addEventListener('touchstart',e=>{st!=='play'?start():mv(e)},{passive:true});
+addEventListener('mousedown',e=>{if(st!=='play')start()});
+function txt(s,y,sz,col){x.fillStyle=col||'#fff';x.font='bold '+sz+'px sans-serif';x.textAlign='center';x.fillText(s,W/2,y)}
+function loop(){
+ x.fillStyle='#0b1020';x.fillRect(0,0,W,H);
+ x.fillStyle='#fff';stars.forEach(s=>{s.y=(s.y+s.s*0.0008)%1;x.fillRect(s.x*W,s.y*H,s.s,s.s)});
+ const py=H-90;
+ if(st==='play'){
+  t++;spd=3+score*0.08;
+  if(t%Math.max(18,45-Math.floor(score/3))===0)items.push({x:30+Math.random()*(W-60),y:-20,bad:Math.random()<.4,r:14+Math.random()*6});
+  for(const o of items){o.y+=spd;
+   if(Math.hypot(o.x-px,o.y-py)<o.r+20){o.hit=1;if(o.bad){lives--;navigator.vibrate&&navigator.vibrate(80)}else score++}
+   else if(o.y>H+30)o.hit=1}
+  items=items.filter(o=>!o.hit);
+  if(lives<=0){st='over';if(score>best){best=score;try{localStorage.setItem('best',best)}catch(e){}}}
+ }
+ for(const o of items){x.fillStyle=o.bad?'#e5484d':'#ffd43b';x.beginPath();
+  if(o.bad)x.arc(o.x,o.y,o.r,0,7);else for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2?o.r*.5:o.r;x.lineTo(o.x+Math.cos(a)*r,o.y+Math.sin(a)*r)}
+  x.fill()}
+ if(st!=='menu'){x.fillStyle='#4dabf7';x.beginPath();x.moveTo(px,py-24);x.lineTo(px+22,py+18);x.lineTo(px-22,py+18);x.fill()}
+ if(st==='play'){x.textAlign='left';x.fillStyle='#fff';x.font='bold 22px sans-serif';x.fillText('Score '+score,16,40);x.textAlign='right';x.fillText('♥'.repeat(lives),W-16,40)}
+ if(st==='menu'){txt('Star Dodger',H/2-40,42,'#ffd43b');txt('Drag to move. Catch stars, dodge rocks.',H/2,16);txt('Tap to start',H/2+40,22)}
+ if(st==='over'){txt('Game Over',H/2-50,40,'#e5484d');txt('Score '+score+'  ·  Best '+best,H/2,22);txt('Tap to play again',H/2+44,18)}
+ requestAnimationFrame(loop)}
+loop();
+</script></body></html>
